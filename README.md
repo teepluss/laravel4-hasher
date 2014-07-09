@@ -21,7 +21,7 @@ $results = Hasher::extract($users, '{n}.User.id');
 ~~~
 
 ## For more example:
-(http://book.cakephp.org/2.0/en/core-utility-libraries/hash.html)[CakePhp Hash]
+[CakePhp Hash](http://book.cakephp.org/2.0/en/core-utility-libraries/hash.html)
 
 
 ## Support or Contact
