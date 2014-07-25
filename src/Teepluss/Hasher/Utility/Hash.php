@@ -107,7 +107,7 @@ class Hash {
 		if (strpos($path, '[') === false) {
 			$tokens = explode('.', $path);
 		} else {
-			$tokens = String::tokenize($path, '.', '[', ']');
+			$tokens = self::tokenize($path, '.', '[', ']');
 		}
 
 		$_key = '__set_item__';
@@ -142,6 +142,83 @@ class Hash {
 		}
 		return $context[$_key];
 	}
+
+/**
+ * Tokenizes a string using $separator, ignoring any instance of $separator that appears between
+ * $leftBound and $rightBound.
+ *
+ * @param string $data The data to tokenize.
+ * @param string $separator The token to split the data on.
+ * @param string $leftBound The left boundary to ignore separators in.
+ * @param string $rightBound The right boundary to ignore separators in.
+ * @return mixed Array of tokens in $data or original input if empty.
+ */
+	public static function tokenize($data, $separator = ',', $leftBound = '(', $rightBound = ')') {
+		if (empty($data)) {
+			return array();
+		}
+
+		$depth = 0;
+		$offset = 0;
+		$buffer = '';
+		$results = array();
+		$length = strlen($data);
+		$open = false;
+
+		while ($offset <= $length) {
+			$tmpOffset = -1;
+			$offsets = array(
+				strpos($data, $separator, $offset),
+				strpos($data, $leftBound, $offset),
+				strpos($data, $rightBound, $offset)
+			);
+			for ($i = 0; $i < 3; $i++) {
+				if ($offsets[$i] !== false && ($offsets[$i] < $tmpOffset || $tmpOffset == -1)) {
+					$tmpOffset = $offsets[$i];
+				}
+			}
+			if ($tmpOffset !== -1) {
+				$buffer .= substr($data, $offset, ($tmpOffset - $offset));
+				if (!$depth && $data{$tmpOffset} == $separator) {
+					$results[] = $buffer;
+					$buffer = '';
+				} else {
+					$buffer .= $data{$tmpOffset};
+				}
+				if ($leftBound != $rightBound) {
+					if ($data{$tmpOffset} == $leftBound) {
+						$depth++;
+					}
+					if ($data{$tmpOffset} == $rightBound) {
+						$depth--;
+					}
+				} else {
+					if ($data{$tmpOffset} == $leftBound) {
+						if (!$open) {
+							$depth++;
+							$open = true;
+						} else {
+							$depth--;
+						}
+					}
+				}
+				$offset = ++$tmpOffset;
+			} else {
+				$results[] = $buffer . substr($data, $offset);
+				$offset = $length + 1;
+			}
+		}
+		if (empty($results) && !empty($buffer)) {
+			$results[] = $buffer;
+		}
+
+		if (!empty($results)) {
+			return array_map('trim', $results);
+		}
+
+		return array();
+	}
+
 /**
  * Split token conditions
  *
@@ -260,7 +337,7 @@ class Hash {
 		if ($noTokens) {
 			$tokens = explode('.', $path);
 		} else {
-			$tokens = String::tokenize($path, '.', '[', ']');
+			$tokens = self::tokenize($path, '.', '[', ']');
 		}
 
 		if ($noTokens && strpos($path, '{') === false) {
@@ -348,7 +425,7 @@ class Hash {
 			return $data;
 		}
 
-		$tokens = $noTokens ? explode('.', $path) : String::tokenize($path, '.', '[', ']');
+		$tokens = $noTokens ? explode('.', $path) : self::tokenize($path, '.', '[', ']');
 
 		if ($noExpansion && $noTokens) {
 			return static::_simpleOp('remove', $data, $tokens);
